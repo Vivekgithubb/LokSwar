@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-paper: #faf7f4;
+}
+
+html,
+body {
+  @apply bg-stone-50 text-neutral-700 font-sans;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
