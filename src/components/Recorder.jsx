@@ -168,7 +168,7 @@ export default function Recorder() {
               : "bg-stone-300 cursor-not-allowed"
           }`}
         >
-          Submit to Archive
+          continue
         </button>
       </div>
     </div>

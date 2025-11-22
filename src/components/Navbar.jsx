@@ -2,7 +2,7 @@ import { Routes, Route, Link } from "react-router-dom";
 
 export default function Navbar() {
   return (
-    <header className="sticky top-0  backdrop-blur-xl ">
+    <header className="sticky top-0  z-50  backdrop-blur-xl ">
       <div className="max-w-auto mx-auto px-6 py-4 flex items-center justify-between">
         <Link to="/">
           <div className="flex items-center space-x-3">
