@@ -1,10 +1,11 @@
-import React, { useState, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import React, { useState, useRef, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { Map as MapIcon, List as ListIcon, Search } from "lucide-react"; // Assuming you have lucide-react, or use standard text
 
-// Custom blue marker icon
+// --- Configuration & Icons ---
 const blueMarkerIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
@@ -16,7 +17,6 @@ const blueMarkerIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-// Sample data with multiple stories per location
 const storiesData = [
   {
     id: 1,
@@ -26,7 +26,6 @@ const storiesData = [
     location: "Banaras, Uttar Pradesh",
     lat: 25.3245,
     lng: 83.0085,
-    color: "#3B82F6",
   },
   {
     id: 2,
@@ -36,7 +35,6 @@ const storiesData = [
     location: "Pune, Maharashtra",
     lat: 18.5204,
     lng: 73.8567,
-    color: "#3B82F6",
   },
   {
     id: 3,
@@ -46,7 +44,6 @@ const storiesData = [
     location: "Indore, Madhya Pradesh",
     lat: 22.7196,
     lng: 75.8577,
-    color: "#3B82F6",
   },
   {
     id: 4,
@@ -56,7 +53,6 @@ const storiesData = [
     location: "Jaipur, Rajasthan",
     lat: 26.9124,
     lng: 75.7873,
-    color: "#3B82F6",
   },
   {
     id: 5,
@@ -66,7 +62,6 @@ const storiesData = [
     location: "Thiruvananthapuram, Kerala",
     lat: 8.5241,
     lng: 76.9366,
-    color: "#3B82F6",
   },
   {
     id: 6,
@@ -76,16 +71,28 @@ const storiesData = [
     location: "Varanasi, Uttar Pradesh",
     lat: 25.3201,
     lng: 82.9876,
-    color: "#3B82F6",
   },
 ];
+
+// --- Helper Component to Recenter Map Programmatically ---
+function MapUpdater({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center, 10, { animate: true });
+    }
+  }, [center, map]);
+  return null;
+}
 
 export default function MapExplorer() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [filteredStories, setFilteredStories] = useState(storiesData);
-  const mapRef = useRef(null);
+
+  // RESPONSIVE STATE: 'list' or 'map'
+  const [mobileView, setMobileView] = useState("list");
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -103,149 +110,197 @@ export default function MapExplorer() {
 
   const handleLocationClick = (story) => {
     setSelectedLocation(story);
-    // Navigate to Stories page with location filter
-    navigate(`/stories?location=${encodeURIComponent(story.location)}`);
-  };
-
-  const handleMarkerClick = (story) => {
-    setSelectedLocation(story);
-    // Zoom to marker (no navigation)
-    if (mapRef.current) {
-      mapRef.current.setView([story.lat, story.lng], 10);
+    // On mobile, if they click a list item, switch to map to show them where it is
+    if (window.innerWidth < 1024) {
+      setMobileView("map");
     }
   };
 
-  return (
-    <div className="w-full h-full flex flex-col">
-      {/* Header */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-stone-200 flex-shrink-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
-          Cultural Atlas
-        </h1>
-        <p className="mt-2 text-xs sm:text-sm text-neutral-600">
-          Interactive map of oral traditions across India
-        </p>
-      </div>
+  // Handle Marker Click (Navigate to details)
+  const handleMarkerClick = (story) => {
+    // navigate(`/stories?location=${encodeURIComponent(story.location)}`);
+    // Or just select it
+    setSelectedLocation(story);
+  };
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="border border-stone-200 h-full flex flex-col lg:flex-row">
-          {/* Sidebar - Story Locations */}
-          <aside className="w-full lg:w-80 lg:border-r border-stone-200 flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-stone-200 flex-shrink-0">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-neutral-900">
-                  Story Locations
-                </h2>
-                <p className="text-xs text-neutral-500 mt-1">
-                  {filteredStories.length} regions mapped
-                </p>
-              </div>
+  return (
+    // Use h-[calc(100vh-theme(spacing.16))] or fixed height to ensure scroll works correctly
+    <div className="w-full h-[calc(100vh-64px)] flex flex-col bg-stone-50">
+      {/* Header */}
+      <header className="px-4 py-4 border-b border-stone-200 bg-white flex justify-between items-center shrink-0">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight">
+            Cultural Atlas
+          </h1>
+          <p className="hidden sm:block text-xs text-neutral-500 mt-1">
+            Interactive map of oral traditions
+          </p>
+        </div>
+
+        {/* MOBILE TOGGLE BUTTONS (Visible only on < lg) */}
+        <div className="flex lg:hidden bg-stone-100 p-1 rounded-md border border-stone-200">
+          <button
+            onClick={() => setMobileView("list")}
+            className={`flex items-center px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
+              mobileView === "list"
+                ? "bg-white text-neutral-900 shadow-sm border border-stone-200"
+                : "text-neutral-500 hover:text-neutral-900"
+            }`}
+          >
+            <ListIcon className="w-3 h-3 mr-1.5" /> Stories
+          </button>
+          <button
+            onClick={() => setMobileView("map")}
+            className={`flex items-center px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
+              mobileView === "map"
+                ? "bg-white text-neutral-900 shadow-sm border border-stone-200"
+                : "text-neutral-500 hover:text-neutral-900"
+            }`}
+          >
+            <MapIcon className="w-3 h-3 mr-1.5" /> Map
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* SIDEBAR (List View) 
+            - Hidden on mobile if view is 'map'
+            - Always block on Desktop (lg)
+        */}
+        <aside
+          className={`
+            flex-col border-r border-stone-200 bg-white w-full lg:w-96 transition-all
+            ${mobileView === "map" ? "hidden lg:flex" : "flex"}
+          `}
+        >
+          {/* Search Bar */}
+          <div className="p-4 border-b border-stone-200 shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
               <input
                 type="text"
-                placeholder="Search locations or stories..."
+                placeholder="Search regions..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full pl-9 pr-4 py-2 text-sm bg-stone-50 border border-stone-200 text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-neutral-400 transition-colors"
               />
             </div>
+            <div className="mt-3 flex justify-between items-end">
+              <span className="text-[10px] uppercase tracking-wider text-stone-500 font-semibold">
+                {filteredStories.length} LOCATIONS FOUND
+              </span>
+            </div>
+          </div>
 
-            {/* Stories List */}
-            <div className="flex-1 overflow-y-auto">
-              {filteredStories.length > 0 ? (
-                filteredStories.map((story) => (
-                  <div
-                    key={story.id}
-                    id={`story-${story.id}`}
-                    onClick={() => handleLocationClick(story)}
-                    className={`p-4 border-b border-stone-100 cursor-pointer transition-colors ${
+          {/* Scrollable List */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            {filteredStories.length > 0 ? (
+              filteredStories.map((story) => (
+                <div
+                  key={story.id}
+                  onClick={() => handleLocationClick(story)}
+                  className={`
+                    group p-4 border-b border-stone-100 cursor-pointer transition-all
+                    ${
                       selectedLocation?.id === story.id
-                        ? "bg-blue-50 border-l-4 border-l-blue-500"
-                        : "hover:bg-stone-50"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-neutral-900 text-sm">
-                        {story.title}
-                      </h3>
-                      <span className="text-xs font-mono text-terracotta font-semibold ml-2">
-                        {story.count}
-                      </span>
-                    </div>
-                    <div className="text-xs text-neutral-600 mono">
-                      📍 {story.location}
-                    </div>
-                    <div className="text-xs text-neutral-500 mt-1">
+                        ? "bg-stone-50 border-l-4 border-l-orange-600"
+                        : "hover:bg-stone-50 border-l-4 border-l-transparent"
+                    }
+                  `}
+                >
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-medium text-neutral-900 text-sm group-hover:text-orange-700 transition-colors">
+                      {story.title}
+                    </h3>
+                    <span className="text-[10px] font-mono bg-stone-100 px-1.5 py-0.5 rounded text-stone-600">
+                      {story.count}
+                    </span>
+                  </div>
+                  <div className="text-xs text-stone-500 mt-1 font-mono">
+                    {story.location}
+                  </div>
+                  <div className="mt-2 inline-block px-2 py-0.5 text-[10px] border border-stone-200 rounded-full text-stone-500 uppercase tracking-wide">
+                    {story.category}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-stone-400 text-sm">
+                No results found.
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* MAP AREA 
+            - Hidden on mobile if view is 'list'
+            - Always block on Desktop (lg)
+        */}
+        <main
+          className={`
+            flex-1 relative bg-stone-100
+            ${mobileView === "list" ? "hidden lg:block" : "block"}
+          `}
+        >
+          {/* Desktop Overlay info (optional) */}
+          <div className="absolute top-4 right-4 z-[1000] bg-white/90 backdrop-blur border border-stone-200 p-2 shadow-sm rounded-sm hidden lg:block">
+            <div className="text-[10px] uppercase tracking-widest text-stone-500">
+              Live Atlas Status
+            </div>
+            <div className="text-xs font-mono">
+              System Online • {filteredStories.length} Pins Active
+            </div>
+          </div>
+
+          <MapContainer
+            center={[20.5937, 78.9629]}
+            zoom={5}
+            style={{ height: "100%", width: "100%" }}
+            className="z-0"
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            />
+
+            {/* Helper to programmatically move map when list item clicked */}
+            {selectedLocation && (
+              <MapUpdater
+                center={[selectedLocation.lat, selectedLocation.lng]}
+              />
+            )}
+
+            {filteredStories.map((story) => (
+              <Marker
+                key={story.id}
+                position={[story.lat, story.lng]}
+                icon={blueMarkerIcon}
+                eventHandlers={{ click: () => handleMarkerClick(story) }}
+              >
+                <Popup className="rounded-none border border-stone-200 shadow-none">
+                  <div className="font-sans min-w-[150px]">
+                    <div className="text-xs font-bold text-neutral-900 mb-1 uppercase tracking-wide border-b border-stone-100 pb-1">
                       {story.category}
                     </div>
+                    <h3 className="text-sm font-semibold text-orange-700">
+                      {story.title}
+                    </h3>
+                    <div className="text-xs text-stone-500 mt-1 font-mono">
+                      {story.location}
+                    </div>
+                    <button
+                      onClick={() => navigate(`/story/${story.id}`)}
+                      className="mt-2 w-full bg-neutral-900 text-white text-[10px] py-1.5 px-2 hover:bg-neutral-800 uppercase tracking-wider transition-colors"
+                    >
+                      View Archive
+                    </button>
                   </div>
-                ))
-              ) : (
-                <div className="p-4 text-center text-neutral-500 text-sm">
-                  No stories found
-                </div>
-              )}
-            </div>
-          </aside>
-
-          {/* Map */}
-          <div className="flex-1 bg-neutral-50 min-h-96 lg:min-h-auto relative hidden lg:block">
-            <MapContainer
-              ref={mapRef}
-              center={[20.5937, 78.9629]}
-              zoom={5}
-              style={{ height: "100%", width: "100%" }}
-              className="z-10"
-            >
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-              {filteredStories.map((story) => (
-                <Marker
-                  key={story.id}
-                  position={[story.lat, story.lng]}
-                  icon={blueMarkerIcon}
-                  eventHandlers={{
-                    click: () => handleMarkerClick(story),
-                  }}
-                >
-                  <Popup className="custom-popup">
-                    <div className="p-2">
-                      <div className="font-semibold text-sm">{story.title}</div>
-                      <div className="text-xs text-neutral-600 mt-1">
-                        {story.location}
-                      </div>
-                      <div className="text-xs text-neutral-600">
-                        {story.count} stories
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
-
-          {/* Mobile Map Preview (shown below on small screens) */}
-          <div className="lg:hidden mt-4 border-t border-stone-200 pt-4">
-            <div className="bg-neutral-50 border border-stone-200 rounded-sm h-64 flex items-center justify-center">
-              <div className="text-center text-neutral-500 text-sm">
-                {selectedLocation ? (
-                  <div>
-                    <div className="text-lg font-semibold text-neutral-900 mb-2">
-                      {selectedLocation.title}
-                    </div>
-                    <div className="text-xs">
-                      📍 {selectedLocation.location}
-                    </div>
-                    <div className="text-xs mt-1">
-                      {selectedLocation.count} stories available
-                    </div>
-                  </div>
-                ) : (
-                  "Select a location to view details"
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </main>
       </div>
     </div>
   );

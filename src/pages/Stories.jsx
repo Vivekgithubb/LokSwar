@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+  Search,
+  MapPin,
+  Mic,
+  Calendar,
+  Clock,
+  Play,
+  Filter,
+  X,
+  Volume2,
+  Radio,
+  CheckCircle2,
+} from "lucide-react";
 
-// Sample stories data with locations
+// Sample stories data (Unchanged)
 const allStoriesData = [
   {
     id: 1,
@@ -100,7 +113,7 @@ export default function Stories() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // Extract location from query params if passed from map
+  // Logic Unchanged
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const locParam = params.get("location");
@@ -112,13 +125,7 @@ export default function Stories() {
 
   const filterStories = (loc, query, category) => {
     let filtered = allStoriesData;
-
-    // Filter by location
-    if (loc) {
-      filtered = filtered.filter((story) => story.location === loc);
-    }
-
-    // Filter by search query
+    if (loc) filtered = filtered.filter((story) => story.location === loc);
     if (query.trim()) {
       filtered = filtered.filter(
         (story) =>
@@ -127,12 +134,8 @@ export default function Stories() {
           story.description.toLowerCase().includes(query.toLowerCase())
       );
     }
-
-    // Filter by category
-    if (category !== "All") {
+    if (category !== "All")
       filtered = filtered.filter((story) => story.category === category);
-    }
-
     setFilteredStories(filtered);
   };
 
@@ -155,44 +158,52 @@ export default function Stories() {
   const locations = [...new Set(allStoriesData.map((s) => s.location))];
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col bg-stone-50">
       {/* Header */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-stone-200 flex-shrink-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
-          Archive
-        </h1>
-        <p className="mt-2 text-xs sm:text-sm text-neutral-600">
-          Browse all uploaded stories and oral traditions
-        </p>
+      <div className="w-full bg-white border-b border-stone-200 sticky top-0 z-20">
+        <div className="px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-end">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">
+              Archive Registry
+            </h1>
+            <p className="mt-1 text-xs font-mono text-stone-500 uppercase tracking-wider">
+              System Status: Online • {allStoriesData.length} Records Loaded
+            </p>
+          </div>
+          <div className="hidden sm:block">
+            <span className="inline-flex items-center px-3 py-1 bg-orange-600 text-xs font-mono text-white rounded-full shadow-sm">
+              {filteredStories.length} RESULTS
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="space-y-6">
-          {/* Filters */}
-          <div className="border border-stone-200 p-4 sm:p-6 rounded-sm space-y-4">
-            <div>
-              <label className="block text-xs uppercase tracking-wider font-semibold text-neutral-700 mb-2">
-                Search Stories
-              </label>
-              <input
-                type="text"
-                placeholder="Search by title, narrator, or keywords..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs uppercase tracking-wider font-semibold text-neutral-700 mb-2">
-                  Location
-                </label>
+      <div className="flex-1 overflow-y-auto w-full">
+        <div className="max-w-auto mx-auto px-4 sm:px-6 lg:px-8 py-1 ">
+          {/* Filter Bar */}
+          <div className="bg-white border border-stone-200 p-1 rounded-sm shadow-sm sticky top-2 z-10">
+            <div className="flex flex-col md:flex-row gap-0 md:divide-x divide-stone-200">
+              <div className="flex-1 relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-stone-400 group-focus-within:text-orange-600 transition-colors" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by keywords, narrator..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border-none text-sm text-neutral-900 placeholder-stone-400 focus:outline-none focus:ring-0 bg-transparent"
+                />
+              </div>
+              <div className="md:w-1/4 relative group border-t md:border-t-0 border-stone-100">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MapPin className="h-4 w-4 text-stone-400 group-focus-within:text-orange-600 transition-colors" />
+                </div>
                 <select
                   value={selectedLocation || ""}
                   onChange={(e) => handleLocationChange(e.target.value || null)}
-                  className="w-full px-3 py-2 text-sm border border-stone-200 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="block w-full pl-10 pr-8 py-3 border-none text-sm text-neutral-900 focus:outline-none focus:ring-0 bg-transparent appearance-none cursor-pointer truncate"
                 >
                   <option value="">All Locations</option>
                   {locations.map((loc) => (
@@ -201,16 +212,18 @@ export default function Stories() {
                     </option>
                   ))}
                 </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <Filter className="h-3 w-3 text-stone-400" />
+                </div>
               </div>
-
-              <div>
-                <label className="block text-xs uppercase tracking-wider font-semibold text-neutral-700 mb-2">
-                  Category
-                </label>
+              <div className="md:w-1/5 relative group border-t md:border-t-0 border-stone-100">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Filter className="h-4 w-4 text-stone-400 group-focus-within:text-orange-600 transition-colors" />
+                </div>
                 <select
                   value={selectedCategory}
                   onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-stone-200 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="block w-full pl-10 pr-8 py-3 border-none text-sm text-neutral-900 focus:outline-none focus:ring-0 bg-transparent appearance-none cursor-pointer"
                 >
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
@@ -218,59 +231,158 @@ export default function Stories() {
                     </option>
                   ))}
                 </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <Filter className="h-3 w-3 text-stone-400" />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Stories Grid */}
+          {/* Grid */}
           {filteredStories.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px  bg-stone-200 border border-stone-200">
               {filteredStories.map((story) => (
                 <div
                   key={story.id}
-                  className="border border-stone-200 p-4 sm:p-6 rounded-sm hover:shadow-md transition-shadow"
+                  className="bg-white group hover:bg-stone-50 transition-all duration-300 flex flex-col h-full relative overflow-hidden"
                 >
-                  <h3 className="text-base font-semibold text-neutral-900 mb-2">
-                    {story.title}
-                  </h3>
+                  {/* Hover Accent Line */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-orange-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left z-10" />
 
-                  <div className="space-y-2 text-sm mb-4">
-                    <div className="text-xs text-neutral-600">
-                      📍 <span className="mono">{story.location}</span>
+                  {/* 1. VISUAL HEADER (Generative Pattern) */}
+                  <div className="h-32 w-full bg-stone-100 relative overflow-hidden border-b border-stone-100">
+                    {/* Abstract Waveform Lines */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity duration-500">
+                      <svg
+                        className="w-full h-full text-neutral-900"
+                        viewBox="0 0 100 20"
+                        preserveAspectRatio="none"
+                      >
+                        <path
+                          d="M0 10 Q 10 5, 20 10 T 40 10 T 60 10 T 80 10 T 100 10"
+                          fill="transparent"
+                          stroke="currentColor"
+                          strokeWidth="1"
+                        />
+                        <path
+                          d="M0 10 Q 10 15, 20 10 T 40 10 T 60 10 T 80 10 T 100 10"
+                          fill="transparent"
+                          stroke="currentColor"
+                          strokeWidth="1"
+                        />
+                        <path
+                          d="M0 12 Q 10 2, 20 12 T 40 12 T 60 12 T 80 12 T 100 12"
+                          fill="transparent"
+                          stroke="currentColor"
+                          strokeWidth="0.5"
+                        />
+                      </svg>
                     </div>
-                    <div className="text-xs text-neutral-600">
-                      👤 <span className="mono">{story.narrator}</span>
-                    </div>
-                    <div className="text-xs text-neutral-600">
-                      🏷️{" "}
-                      <span className="inline-block bg-stone-100 px-2 py-1 rounded-sm">
+
+                    {/* Overlay Tags */}
+                    <div className="absolute top-4 left-4">
+                      <span className="inline-flex items-center px-2 py-1 bg-white/90 backdrop-blur border border-stone-200 text-[10px] font-bold uppercase tracking-widest text-stone-600 rounded-sm">
+                        <Radio className="w-3 h-3 mr-1.5 text-orange-600" />
                         {story.category}
                       </span>
                     </div>
-                    <div className="text-xs text-neutral-600">
-                      ⏱️ <span className="mono">{story.duration}</span> •{" "}
-                      {story.date}
+
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="flex justify-between items-end">
+                        <span className="font-mono text-[10px] text-stone-500 bg-white/80 px-1 rounded">
+                          REF: {story.id.toString().padStart(4, "0")}
+                        </span>
+                        {/* Fake "Verified" Badge */}
+                        <span className="text-orange-600 flex items-center gap-1 text-[10px] font-bold bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">
+                          <CheckCircle2 className="w-3 h-3" /> VERIFIED
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-neutral-600 line-clamp-2 mb-4">
-                    {story.description}
-                  </p>
+                  <div className="p-6 flex flex-col flex-grow">
+                    {/* Title Area */}
+                    <div className="mb-6">
+                      <h3 className="text-xl font-bold text-neutral-900 leading-tight group-hover:text-orange-700 transition-colors">
+                        {story.title}
+                      </h3>
+                    </div>
 
-                  <button
-                    onClick={() => navigate(`/story/${story.id}`)}
-                    className="w-full px-3 py-2 bg-terracotta text-white text-xs font-medium rounded-sm hover:bg-orange-600 transition-colors"
-                  >
-                    Listen Now
-                  </button>
+                    {/* 2. STRUCTURED METADATA BLOCKS */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      {/* Block 1: Narrator */}
+                      <div className="border-l-2 border-stone-100 pl-3">
+                        <div className="text-[10px] uppercase tracking-widest text-stone-400 mb-1 font-semibold">
+                          Narrator
+                        </div>
+                        <div className="text-xs font-medium text-neutral-700 flex items-center">
+                          <Mic className="w-3 h-3 mr-1.5 text-stone-400" />
+                          {story.narrator}
+                        </div>
+                      </div>
+
+                      {/* Block 2: Location */}
+                      <div className="border-l-2 border-stone-100 pl-3">
+                        <div className="text-[10px] uppercase tracking-widest text-stone-400 mb-1 font-semibold">
+                          Region
+                        </div>
+                        <div className="text-xs font-medium text-neutral-700 flex items-center truncate">
+                          <MapPin className="w-3 h-3 mr-1.5 text-stone-400" />
+                          <span className="truncate">
+                            {story.location.split(",")[0]}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Block 3: Date */}
+                      <div className="border-l-2 border-stone-100 pl-3">
+                        <div className="text-[10px] uppercase tracking-widest text-stone-400 mb-1 font-semibold">
+                          Recorded
+                        </div>
+                        <div className="text-xs font-mono text-neutral-600 flex items-center">
+                          <Calendar className="w-3 h-3 mr-1.5 text-stone-400" />
+                          {story.date}
+                        </div>
+                      </div>
+
+                      {/* Block 4: Duration */}
+                      <div className="border-l-2 border-stone-100 pl-3">
+                        <div className="text-[10px] uppercase tracking-widest text-stone-400 mb-1 font-semibold">
+                          Length
+                        </div>
+                        <div className="text-xs font-mono text-neutral-600 flex items-center">
+                          <Clock className="w-3 h-3 mr-1.5 text-stone-400" />
+                          {story.duration}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-sm text-neutral-600 line-clamp-2 mb-6 font-sans leading-relaxed flex-grow border-t border-stone-100 pt-4">
+                      {story.description}
+                    </p>
+
+                    {/* Action Button */}
+                    <button
+                      onClick={() => navigate(`/story/${story.id}`)}
+                      className="w-full py-3 bg-stone-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center justify-center gap-2 group-hover:shadow-lg mt-auto rounded-sm"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                      Listen story
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <div className="text-neutral-500 text-sm mb-2">
-                No stories found
+            // Empty State (Unchanged)
+            <div className="flex flex-col items-center justify-center py-20 border border-stone-200 border-dashed rounded-sm bg-stone-50/50">
+              <div className="p-4 bg-stone-100 rounded-full mb-4">
+                <X className="w-6 h-6 text-stone-400" />
               </div>
+              <h3 className="text-neutral-900 font-medium mb-1">
+                No records found
+              </h3>
               <button
                 onClick={() => {
                   setSearchQuery("");
@@ -278,9 +390,9 @@ export default function Stories() {
                   setSelectedCategory("All");
                   filterStories(null, "", "All");
                 }}
-                className="text-xs text-terracotta hover:underline"
+                className="text-xs font-bold text-orange-600 hover:text-orange-700 uppercase tracking-wider border-b border-orange-200 hover:border-orange-600 pb-0.5 transition-all"
               >
-                Clear filters
+                Reset All Filters
               </button>
             </div>
           )}

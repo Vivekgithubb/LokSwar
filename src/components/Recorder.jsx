@@ -1,32 +1,47 @@
 import React, { useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
+import RecordPlugin from "wavesurfer.js/dist/plugins/record.esm.js";
 
 export default function Recorder() {
   const waveformRef = useRef(null);
   const wsRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
+  const recordPluginRef = useRef(null); // Ref to store the record plugin
   const [isRecording, setIsRecording] = useState(false);
   const [hasRecording, setHasRecording] = useState(false);
-  const [status, setStatus] = useState("Idle");
-  const [progress, setProgress] = useState(0);
+  const [audioBlob, setAudioBlob] = useState(null);
 
   useEffect(() => {
-    // create wavesurfer instance
     if (waveformRef.current) {
+      // 1. Initialize WaveSurfer
       wsRef.current = WaveSurfer.create({
         container: waveformRef.current,
-        backend: "WebAudio",
-        height: 80,
-        waveColor: "#111827",
-        progressColor: "#111827",
-        cursorWidth: 0,
+        waveColor: "#d6d3d1", // Stone-300 (Subtle background wave)
+        progressColor: "#ea580c", // Orange-600 (Active wave)
+        cursorColor: "#ea580c",
+        barWidth: 2,
+        barGap: 2,
+        barRadius: 2,
+        height: 60, // Fixed height
         normalize: true,
+        minPxPerSec: 50, // Ensures the wave isn't too squashed
       });
 
-      wsRef.current.on("ready", () => {
-        setStatus("Ready");
-        setProgress(100);
+      // 2. Initialize Record Plugin
+      const record = wsRef.current.registerPlugin(
+        RecordPlugin.create({
+          scrollingWaveform: true, // Creates the "moving" effect
+          renderRecordedAudio: false, // We handle this manually
+        })
+      );
+
+      recordPluginRef.current = record;
+
+      // 3. Handle Recording End
+      record.on("record-end", (blob) => {
+        setAudioBlob(blob);
+        setHasRecording(true);
+        // Load the recorded audio into the player for review
+        wsRef.current.loadBlob(blob);
       });
     }
 
@@ -40,43 +55,23 @@ export default function Recorder() {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      chunksRef.current = [];
-      mediaRecorderRef.current.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      mediaRecorderRef.current.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        setStatus("Processing Audio...");
-        setProgress(5);
-        // load blob into wavesurfer
-        if (wsRef.current) {
-          wsRef.current.loadBlob(blob);
-        }
-        setHasRecording(true);
-      };
-
-      mediaRecorderRef.current.start();
+      // This starts the microphone AND the visualizer
+      await recordPluginRef.current.startMic();
+      await recordPluginRef.current.startRecording();
       setIsRecording(true);
-      setStatus("Recording");
-      setProgress(0);
+      setHasRecording(false);
     } catch (err) {
-      console.error(err);
-      setStatus("Microphone denied");
+      console.error("Mic Error:", err);
+      alert("Could not access microphone");
     }
   };
 
   const stopRecording = () => {
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== "inactive"
-    ) {
-      mediaRecorderRef.current.stop();
-      // stop tracks
-      mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+    if (recordPluginRef.current) {
+      recordPluginRef.current.stopRecording();
+      recordPluginRef.current.stopMic();
+      setIsRecording(false);
     }
-    setIsRecording(false);
   };
 
   const togglePlay = () => {
@@ -85,68 +80,94 @@ export default function Recorder() {
   };
 
   const clearAudio = () => {
-    if (hasRecording && wsRef.current) {
-      wsRef.current.empty(); // removes audio buffer & visual waveform
+    if (wsRef.current) {
+      wsRef.current.empty(); // Clear waveform
+      setAudioBlob(null);
       setHasRecording(false);
     }
   };
 
   return (
     <div className="flex flex-col h-full">
-      <div
-        ref={waveformRef}
-        className="w-full bg-stone-50 border border-stone-200 rounded-sm mb-3 sm:mb-4 flex-1"
-      />
+      {/* VISUALIZER BOX 
+        - Removed 'flex' and 'items-center' to fix the "single bar" glitch.
+        - Added 'pt-8' to push the wave down visually to the center.
+      */}
+      <div className="w-full h-32 bg-stone-50 border border-stone-200 rounded-sm mb-4 overflow-hidden relative">
+        {/* The Waveform Container */}
+        <div
+          ref={waveformRef}
+          className="w-full h-full pt-8 px-4" // Padding puts wave in vertical center
+        />
 
-      <div className="space-y-2 sm:space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+        {/* Live Indicator Overlay */}
+        {isRecording && (
+          <div className="absolute top-2 right-2 flex items-center gap-2 bg-white/80 backdrop-blur px-2 py-1 rounded-sm border border-red-100">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
+              Live Input
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* CONTROLS */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             onClick={isRecording ? stopRecording : startRecording}
-            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-terracotta text-white text-xs sm:text-sm font-medium rounded-sm hover:bg-orange-600 transition-colors"
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-sm transition-all ${
+              isRecording
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-neutral-900 hover:bg-neutral-800"
+            }`}
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" />
-              <path
-                d="M19 11v1a7 7 0 0 1-14 0v-1"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                fill="none"
-              />
-              <path
-                d="M12 19v3"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                fill="none"
-              />
-            </svg>
-            <span className="hidden sm:inline">
-              {isRecording ? "Stop" : "Start Recording"}
-            </span>
-            <span className="sm:hidden">{isRecording ? "Stop" : "Record"}</span>
+            {isRecording ? (
+              <>
+                <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+                <span>Stop Recording</span>
+              </>
+            ) : (
+              <>
+                <div className="w-2.5 h-2.5 bg-red-500 rounded-full" />
+                <span>Start Recording</span>
+              </>
+            )}
           </button>
-          {hasRecording && <button onClick={togglePlay}>Play</button>}
-          {hasRecording && <button onClick={clearAudio}>Clear</button>}
 
-          <button className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 border border-stone-200 text-neutral-900 text-xs sm:text-sm font-medium rounded-sm hover:bg-stone-50 transition-colors">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {hasRecording ? (
+            <div className="flex gap-2">
+              <button
+                onClick={togglePlay}
+                className="flex-1 bg-white border border-stone-200 text-neutral-900 text-sm font-medium rounded-sm hover:bg-stone-50"
+              >
+                Play / Pause
+              </button>
+              <button
+                onClick={clearAudio}
+                className="px-4 bg-white border border-stone-200 text-red-600 text-sm font-medium rounded-sm hover:bg-red-50"
+              >
+                Clear
+              </button>
+            </div>
+          ) : (
+            <button
+              disabled
+              className="flex-1 bg-stone-100 border border-stone-200 text-stone-400 text-sm font-medium rounded-sm cursor-not-allowed"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            <span className="hidden sm:inline">Upload File</span>
-            <span className="sm:hidden">Upload</span>
-          </button>
+              Play Preview
+            </button>
+          )}
         </div>
 
-        <button className="w-full px-4 sm:px-6 py-2 bg-stone-600 text-white text-xs sm:text-sm font-medium rounded-sm hover:bg-stone-700 transition-colors">
+        <button
+          disabled={!hasRecording}
+          className={`w-full px-6 py-2 text-white text-sm font-medium rounded-sm transition-colors uppercase tracking-wide ${
+            hasRecording
+              ? "bg-orange-700 hover:bg-orange-800 cursor-pointer"
+              : "bg-stone-300 cursor-not-allowed"
+          }`}
+        >
           Submit to Archive
         </button>
       </div>
