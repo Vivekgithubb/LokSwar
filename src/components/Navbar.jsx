@@ -41,20 +41,20 @@ export default function Navbar() {
         </Link>
 
         <nav className="flex items-center gap-8 text-sm text-neutral-800">
-          <Link to="/" className="hover:underline">
-            Home
-          </Link>
           <Link to="/record" className="hover:underline">
             Record
           </Link>
           <Link to="/map" className="hover:underline">
-            Atlas
+            Map
           </Link>
           <Link to="/stories" className="hover:underline">
-            Archive
+            All Stories
           </Link>
           <Link to="/leaders" className="hover:underline">
-            Registry
+            LeaderBoard
+          </Link>
+          <Link to="/profile" className="hover:underline">
+            Profile
           </Link>
         </nav>
       </div>

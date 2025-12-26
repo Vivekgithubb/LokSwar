@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import WaveSurfer from "wavesurfer.js";
 import RecordPlugin from "wavesurfer.js/dist/plugins/record.esm.js";
 
@@ -9,6 +10,7 @@ export default function Recorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [hasRecording, setHasRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (waveformRef.current) {
@@ -162,6 +164,7 @@ export default function Recorder() {
 
         <button
           disabled={!hasRecording}
+          onClick={() => navigate("/translate")}
           className={`w-full px-6 py-2 text-white text-sm font-medium rounded-sm transition-colors uppercase tracking-wide ${
             hasRecording
               ? "bg-orange-700 hover:bg-orange-800 cursor-pointer"
