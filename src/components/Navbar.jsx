@@ -1,6 +1,9 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useLogout } from "../api/useLogout";
 
 export default function Navbar() {
+  const { logout } = useLogout();
+
   return (
     <header className="sticky top-0  z-50  backdrop-blur-xl ">
       <div className="max-w-auto mx-auto px-6 py-4 flex items-center justify-between">
@@ -56,6 +59,12 @@ export default function Navbar() {
           <Link to="/profile" className="hover:underline">
             Profile
           </Link>
+          <button
+            onClick={logout}
+            className="group relative bg-orange-500 text-neutral-800 px-3 py-2 rounded-full transition-all hover:bg-neutral-800 hover:text-white hover:ring-4 hover:ring-orange-500/20 active:scale-95"
+          >
+            Logout
+          </button>
         </nav>
       </div>
     </header>

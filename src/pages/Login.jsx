@@ -1,23 +1,28 @@
 import React, { useState } from "react";
 import { ArrowRight, User, Lock, ShieldCheck, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { useLogin } from "../api/useLogin";
 
 export default function Login() {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => setIsLoading(false), 1500);
+  // const [isLoading, setIsLoading] = useState(false);
+  const { login, error, isLoading } = useLogin();
+  const onSubmit = (data) => {
+    //API call
+    login(data);
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
   const navigate = useNavigate();
-
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
   return (
     <div className="min-h-screen w-full bg-white flex items-center justify-center relative overflow-hidden font-sans selection:bg-orange-100">
       {/* GRID BACKGROUND 
@@ -64,8 +69,7 @@ export default function Login() {
         </header>
 
         {/* FORM SECTION */}
-        <form className="space-y-10" onSubmit={handleSubmit}>
-          {/* EMAIL INPUT */}
+        <form className="space-y-10" onSubmit={handleSubmit(onSubmit)}>
           <div className="relative group">
             <label className="text-[10px] font-black text-neutral-900 tracking-widest uppercase block mb-1 opacity-40 group-focus-within:opacity-100 transition-opacity">
               Identification / Email
@@ -74,12 +78,23 @@ export default function Login() {
               <input
                 type="email"
                 name="email"
-                required
                 placeholder="archivist@lokswar.org"
                 className="w-full pb-3 bg-transparent border-b-2 border-neutral-100 outline-none focus:border-orange-600 transition-all text-lg font-medium placeholder:text-neutral-200"
-                onChange={handleChange}
+                required
+                {...register("email", {
+                  required: "Email is Required",
+                  pattern: {
+                    value: /^\S+@\S+$/i,
+                    message: "Invalid email address",
+                  },
+                })}
               />
               <User className="absolute right-0 bottom-3 w-4 h-4 text-neutral-200 group-focus-within:text-orange-500 transition-colors" />
+              {errors.email && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -95,19 +110,44 @@ export default function Login() {
                 required
                 placeholder="••••••••••••"
                 className="w-full pb-3 bg-transparent border-b-2 border-neutral-100 outline-none focus:border-orange-600 transition-all text-lg font-medium placeholder:text-neutral-200"
-                onChange={handleChange}
+                {...register("password", {
+                  required: "password is Required",
+                  minLength: {
+                    value: 6,
+                    message: "Minimum 6 characters",
+                  },
+                })}
               />
               <Lock className="absolute right-0 bottom-3 w-4 h-4 text-neutral-200 group-focus-within:text-orange-500 transition-colors" />
+              {errors.password && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
-            {/* <button
-              type="button"
-              className="absolute right-0 -bottom-7 text-[10px] font-bold text-neutral-400 hover:text-orange-600 transition-colors uppercase tracking-widest"
-            >
-              Recover Access?
-            </button> */}
           </div>
 
           {/* ACTIONS */}
+          {error && (
+            <div className="flex items-center gap-3 rounded-md border border-red-200 bg-orange-100/50 px-2 py-3 text-neutral-900">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-5 w-5 text-red-600 flex-shrink-0"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-sm font-medium">
+                {error.response?.data?.message ||
+                  "Login failed. Please check your credentials."}
+              </p>
+            </div>
+          )}
           <div className="pt-2 flex flex-col gap-4">
             <button
               type="submit"

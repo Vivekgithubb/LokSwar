@@ -98,7 +98,7 @@ export const protect = catchAsync(async (req, res, next) => {
   console.log(decoded);
 
   const curUser = await User.findById(decoded.id);
-  console.log(curUser);
+
   if (!curUser)
     return next(new appError("The user does no longer exists", 401));
   //call next() and grant access to proteted route
@@ -114,4 +114,13 @@ export const logout = catchAsync(async (req, res) => {
   res
     .status(200)
     .json({ status: "Success", message: "Logged out successfully" });
+});
+
+export const me = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  console.log(userId);
+
+  const user = await User.findById(userId).select("-password");
+  if (!user) return next(new appError("User not found", 401));
+  return res.status(200).json(user);
 });
